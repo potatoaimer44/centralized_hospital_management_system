@@ -27,7 +27,11 @@ const getOidcConfig = memoize(
 );
 
 export function getSession() {
-  const sessionStore = new PgStore({ pool, createTableIfMissing: true });
+  const sessionStore = new PgStore({ 
+    pool, 
+    createTableIfMissing: false,
+    tableName: 'sessions'
+  });
   return session({
     secret: process.env.SESSION_SECRET || require("crypto").randomBytes(32).toString("hex"),
     resave: false,
