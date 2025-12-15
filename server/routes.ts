@@ -11,22 +11,12 @@ export async function registerRoutes(
 
   // Auth status
   app.get("/api/auth/user", async (req, res) => {
-    // In dev mode without Replit Auth, return a mock admin user
-    if (!isReplitAuthAvailable()) {
-      const mockUser = {
-        id: "dev-user",
-        email: "admin@dev.local",
-        firstName: "Dev",
-        lastName: "Admin",
-        role: "admin",
-        claims: { sub: "dev-user" },
-      };
-      return res.json(mockUser);
-    }
-    
-    if (req.isAuthenticated()) {
+    // Check if user is authenticated (works in both dev and production)
+    if (req.isAuthenticated() && req.user) {
       return res.json(req.user);
     }
+    
+    // Not authenticated
     res.status(401).json({ message: "Not authenticated" });
   });
 

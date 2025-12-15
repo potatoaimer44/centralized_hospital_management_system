@@ -58,15 +58,15 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button asChild data-testid="button-login">
-              <a href="/api/login">Sign In</a>
+            <Button asChild data-testid="button-login" variant="outline">
+              <a href="#roles">Select Role</a>
             </Button>
           </div>
         </div>
       </header>
 
       <main className="pt-16">
-        <section className="py-24 px-6">
+        <section id="roles" className="py-24 px-6">
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-sm text-primary font-medium">
               <Shield className="h-4 w-4" />
@@ -80,13 +80,34 @@ export default function Landing() {
               A secure, AI-integrated medical records management system connecting hospitals, 
               doctors, nurses, and patients across Kathmandu Valley.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <Button size="lg" asChild data-testid="button-get-started">
-                <a href="/api/login">Get Started</a>
-              </Button>
-              <Button variant="outline" size="lg" data-testid="button-learn-more">
-                Learn More
-              </Button>
+            <div className="flex flex-col items-center gap-6 pt-4">
+              <p className="text-sm text-muted-foreground">Select your role to login:</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Button size="lg" asChild className="bg-purple-600 hover:bg-purple-700" data-testid="button-login-admin">
+                  <a href="/api/login/admin">
+                    <Users className="mr-2 h-4 w-4" />
+                    Admin
+                  </a>
+                </Button>
+                <Button size="lg" asChild className="bg-blue-600 hover:bg-blue-700" data-testid="button-login-doctor">
+                  <a href="/api/login/doctor">
+                    <Stethoscope className="mr-2 h-4 w-4" />
+                    Doctor
+                  </a>
+                </Button>
+                <Button size="lg" asChild className="bg-green-600 hover:bg-green-700" data-testid="button-login-nurse">
+                  <a href="/api/login/nurse">
+                    <Activity className="mr-2 h-4 w-4" />
+                    Nurse
+                  </a>
+                </Button>
+                <Button size="lg" asChild className="bg-gray-600 hover:bg-gray-700" data-testid="button-login-patient">
+                  <a href="/api/login/patient">
+                    <FileText className="mr-2 h-4 w-4" />
+                    Patient
+                  </a>
+                </Button>
+              </div>
             </div>
           </div>
         </section>

@@ -29,7 +29,7 @@ const getOidcConfig = memoize(
 export function getSession() {
   const sessionStore = new PgStore({ pool, createTableIfMissing: true });
   return session({
-    secret: process.env.SESSION_SECRET || "dev-secret-change-in-production",
+    secret: process.env.SESSION_SECRET || require("crypto").randomBytes(32).toString("hex"),
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
@@ -72,10 +72,82 @@ export async function setupAuth(app: Express, storage: any) {
   app.use(passport.session());
 
   if (!isReplitAuthAvailable()) {
-    console.log("Replit Auth not configured - running in development mode without auth");
+    console.log("Replit Auth not configured - running in development mode with role-based login");
     
     app.get("/api/login", (_req, res) => {
       res.redirect("/");
+    });
+
+    app.get("/api/login/:role", async (req, res) => {
+      const role = req.params.role as "admin" | "doctor" | "nurse" | "patient";
+      const validRoles = ["admin", "doctor", "nurse", "patient"];
+      
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+
+      const devUsers: Record<string, any> = {
+        admin: {
+          id: "dev-admin",
+          email: "admin@dev.local",
+          firstName: "Admin",
+          lastName: "User",
+          role: "admin",
+        },
+        doctor: {
+          id: "dev-doctor",
+          email: "doctor@dev.local",
+          firstName: "Dr. Ramesh",
+          lastName: "Sharma",
+          role: "doctor",
+        },
+        nurse: {
+          id: "dev-nurse",
+          email: "nurse@dev.local",
+          firstName: "Sita",
+          lastName: "Thapa",
+          role: "nurse",
+        },
+        patient: {
+          id: "dev-patient",
+          email: "patient@dev.local",
+          firstName: "Amit",
+          lastName: "Gurung",
+          role: "patient",
+        },
+      };
+
+      const devUser = devUsers[role];
+      
+      const user = await storage.upsertUser(devUser);
+      
+      if (role === "patient") {
+        const existingPatient = await storage.getPatientByUserId(user.id);
+        if (!existingPatient) {
+          await storage.createPatient({
+            userId: user.id,
+            dateOfBirth: "2008-05-15",
+            gender: "male",
+            bloodGroup: "A+",
+            address: "Kathmandu, Nepal",
+            guardianName: "Parent Guardian",
+            guardianPhone: "9841234567",
+            guardianRelation: "Father",
+            emergencyContact: "9841234568",
+            allergies: "None",
+          });
+        }
+      }
+
+      req.login(
+        { ...user, claims: { sub: user.id } } as Express.User,
+        (err) => {
+          if (err) {
+            return res.status(500).json({ message: "Login failed" });
+          }
+          res.redirect("/");
+        }
+      );
     });
 
     app.get("/api/callback", (_req, res) => {
@@ -87,6 +159,9 @@ export async function setupAuth(app: Express, storage: any) {
         res.redirect("/");
       });
     });
+
+    passport.serializeUser((user, done) => done(null, user));
+    passport.deserializeUser((user: Express.User, done) => done(null, user));
 
     return;
   }
