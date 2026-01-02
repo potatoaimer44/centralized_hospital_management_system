@@ -35,12 +35,15 @@ import {
   History,
   LogOut,
   ChevronUp,
+  AlertTriangle,
+  Calendar,
   Bell,
 } from "lucide-react";
 import type { UserRole } from "@shared/schema";
 
 const adminMenuItems = [
   { title: "Dashboard", url: "/", icon: Home },
+  { title: "Appointments", url: "/appointments", icon: Calendar },
   { title: "Users", url: "/users", icon: Users },
   { title: "Hospitals", url: "/hospitals", icon: Building2 },
   { title: "Patients", url: "/patients", icon: UserPlus },
@@ -51,6 +54,7 @@ const adminMenuItems = [
 
 const doctorMenuItems = [
   { title: "Dashboard", url: "/", icon: Home },
+  { title: "Appointments", url: "/appointments", icon: Calendar },
   { title: "Patients", url: "/patients", icon: Users },
   { title: "Medical Records", url: "/medical-records", icon: FileText },
   { title: "Access Requests", url: "/access-requests", icon: ClipboardList },
@@ -58,12 +62,14 @@ const doctorMenuItems = [
 
 const nurseMenuItems = [
   { title: "Dashboard", url: "/", icon: Home },
+  { title: "Appointments", url: "/appointments", icon: Calendar },
   { title: "Patients", url: "/patients", icon: Users },
   { title: "Vital Signs", url: "/vital-signs", icon: HeartPulse },
 ];
 
 const patientMenuItems = [
   { title: "Dashboard", url: "/", icon: Home },
+  { title: "Appointments", url: "/appointments", icon: Calendar },
   { title: "My Records", url: "/my-records", icon: FileText },
   { title: "Vital Signs", url: "/my-vitals", icon: Activity },
 ];
@@ -78,10 +84,10 @@ const menuByRole: Record<UserRole, typeof adminMenuItems> = {
 export function AppSidebar() {
   const [location] = useLocation();
   const { user } = useAuth();
-  
+
   const role = (user?.role as UserRole) || "patient";
   const menuItems = menuByRole[role] || patientMenuItems;
-  
+
   const getInitials = () => {
     if (user?.firstName && user?.lastName) {
       return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
@@ -109,7 +115,7 @@ export function AppSidebar() {
           </div>
         </div>
       </SidebarHeader>
-      
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
@@ -117,8 +123,8 @@ export function AppSidebar() {
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
-                    asChild 
+                  <SidebarMenuButton
+                    asChild
                     isActive={location === item.url}
                     data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
                   >
@@ -132,7 +138,7 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        
+
         {role === "admin" && (
           <SidebarGroup>
             <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
@@ -158,7 +164,7 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
-        
+
         {role === "doctor" && (
           <SidebarGroup>
             <SidebarGroupLabel>Quick Actions</SidebarGroupLabel>
@@ -177,11 +183,11 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
       </SidebarContent>
-      
+
       <SidebarFooter className="p-2 border-t border-sidebar-border">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button 
+            <button
               className="flex items-center gap-3 w-full p-2 rounded-md hover-elevate"
               data-testid="button-user-menu"
             >

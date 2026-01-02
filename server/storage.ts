@@ -2,6 +2,7 @@ import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
 import {
   users,
+  appointments,
   hospitals,
   patients,
   medicalRecords,
@@ -25,12 +26,15 @@ import {
   type InsertAccessRequest,
   type SecurityAlert,
   type InsertSecurityAlert,
+  type Appointment,
+  type InsertAppointment,
 } from "@shared/schema";
 
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   getUsers(): Promise<User[]>;
   updateUserRole(id: string, role: string): Promise<User | undefined>;
 
@@ -70,6 +74,14 @@ export interface IStorage {
   getSecurityAlerts(): Promise<SecurityAlert[]>;
   createSecurityAlert(alert: InsertSecurityAlert): Promise<SecurityAlert>;
   resolveSecurityAlert(id: number, resolvedBy: string): Promise<SecurityAlert | undefined>;
+
+  // Appointments
+  getAppointments(): Promise<(Appointment & { patient: Patient; doctor: User; hospital: Hospital })[]>;
+  getAppointment(id: number): Promise<(Appointment & { patient: Patient; doctor: User; hospital: Hospital }) | undefined>;
+  getAppointmentsByPatient(patientId: number): Promise<(Appointment & { doctor: User; hospital: Hospital })[]>;
+  getAppointmentsByDoctor(doctorId: string): Promise<(Appointment & { patient: Patient; hospital: Hospital })[]>;
+  createAppointment(appointment: InsertAppointment): Promise<Appointment>;
+  updateAppointmentStatus(id: number, status: string): Promise<Appointment | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -80,7 +92,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
+    const [newUser] = await db
       .insert(users)
       .values(userData)
       .onConflictDoUpdate({
@@ -94,6 +106,11 @@ export class DatabaseStorage implements IStorage {
         },
       })
       .returning();
+    return newUser;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
   }
 
@@ -251,6 +268,107 @@ export class DatabaseStorage implements IStorage {
       .update(securityAlerts)
       .set({ isResolved: true, resolvedBy, resolvedAt: new Date() })
       .where(eq(securityAlerts.id, id))
+      .returning();
+    return updated;
+  }
+
+  // Appointments
+  async getAppointments(): Promise<(Appointment & { patient: Patient; doctor: User; hospital: Hospital })[]> {
+    const rows = await db
+      .select({
+        appointment: appointments,
+        patient: patients,
+        doctor: users,
+        hospital: hospitals,
+      })
+      .from(appointments)
+      .innerJoin(patients, eq(appointments.patientId, patients.id))
+      .innerJoin(users, eq(appointments.doctorId, users.id))
+      .innerJoin(hospitals, eq(appointments.hospitalId, hospitals.id))
+      .orderBy(desc(appointments.startTime));
+
+    return rows.map((row) => ({
+      ...row.appointment,
+      patient: row.patient,
+      doctor: row.doctor,
+      hospital: row.hospital,
+    }));
+  }
+
+  async getAppointment(id: number): Promise<(Appointment & { patient: Patient; doctor: User; hospital: Hospital }) | undefined> {
+    const [row] = await db
+      .select({
+        appointment: appointments,
+        patient: patients,
+        doctor: users,
+        hospital: hospitals,
+      })
+      .from(appointments)
+      .innerJoin(patients, eq(appointments.patientId, patients.id))
+      .innerJoin(users, eq(appointments.doctorId, users.id))
+      .innerJoin(hospitals, eq(appointments.hospitalId, hospitals.id))
+      .where(eq(appointments.id, id));
+
+    if (!row) return undefined;
+
+    return {
+      ...row.appointment,
+      patient: row.patient,
+      doctor: row.doctor,
+      hospital: row.hospital,
+    };
+  }
+
+  async getAppointmentsByPatient(patientId: number): Promise<(Appointment & { doctor: User; hospital: Hospital })[]> {
+    const rows = await db
+      .select({
+        appointment: appointments,
+        doctor: users,
+        hospital: hospitals,
+      })
+      .from(appointments)
+      .innerJoin(users, eq(appointments.doctorId, users.id))
+      .innerJoin(hospitals, eq(appointments.hospitalId, hospitals.id))
+      .where(eq(appointments.patientId, patientId))
+      .orderBy(desc(appointments.startTime));
+
+    return rows.map((row) => ({
+      ...row.appointment,
+      doctor: row.doctor,
+      hospital: row.hospital,
+    }));
+  }
+
+  async getAppointmentsByDoctor(doctorId: string): Promise<(Appointment & { patient: Patient; hospital: Hospital })[]> {
+    const rows = await db
+      .select({
+        appointment: appointments,
+        patient: patients,
+        hospital: hospitals,
+      })
+      .from(appointments)
+      .innerJoin(patients, eq(appointments.patientId, patients.id))
+      .innerJoin(hospitals, eq(appointments.hospitalId, hospitals.id))
+      .where(eq(appointments.doctorId, doctorId))
+      .orderBy(desc(appointments.startTime));
+
+    return rows.map((row) => ({
+      ...row.appointment,
+      patient: row.patient,
+      hospital: row.hospital,
+    }));
+  }
+
+  async createAppointment(appointment: InsertAppointment): Promise<Appointment> {
+    const [created] = await db.insert(appointments).values(appointment).returning();
+    return created;
+  }
+
+  async updateAppointmentStatus(id: number, status: string): Promise<Appointment | undefined> {
+    const [updated] = await db
+      .update(appointments)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(appointments.id, id))
       .returning();
     return updated;
   }

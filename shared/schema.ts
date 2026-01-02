@@ -296,3 +296,41 @@ export type SecurityAlert = typeof securityAlerts.$inferSelect;
 export type UserRole = "admin" | "doctor" | "nurse" | "patient";
 export type AlertSeverity = "low" | "medium" | "high" | "critical";
 export type RequestStatus = "pending" | "approved" | "denied";
+
+// Appointments table
+export const appointments = pgTable("appointments", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  patientId: integer("patient_id").references(() => patients.id).notNull(),
+  doctorId: varchar("doctor_id").references(() => users.id).notNull(),
+  hospitalId: integer("hospital_id").references(() => hospitals.id).notNull(),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
+  status: varchar("status", { length: 20 }).default("scheduled"), // scheduled, completed, cancelled, no_show
+  reason: text("reason"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const appointmentsRelations = relations(appointments, ({ one }) => ({
+  patient: one(patients, {
+    fields: [appointments.patientId],
+    references: [patients.id],
+  }),
+  doctor: one(users, {
+    fields: [appointments.doctorId],
+    references: [users.id],
+  }),
+  hospital: one(hospitals, {
+    fields: [appointments.hospitalId],
+    references: [hospitals.id],
+  }),
+}));
+
+export const insertAppointmentSchema = createInsertSchema(appointments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
+export type Appointment = typeof appointments.$inferSelect;

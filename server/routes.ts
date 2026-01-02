@@ -15,7 +15,7 @@ export async function registerRoutes(
     if (req.isAuthenticated() && req.user) {
       return res.json(req.user);
     }
-    
+
     // Not authenticated
     res.status(401).json({ message: "Not authenticated" });
   });
@@ -40,7 +40,12 @@ export async function registerRoutes(
   });
 
   app.get("/api/hospitals/:id", isAuthenticated, async (req, res) => {
-    const hospital = await storage.getHospital(parseInt(req.params.id));
+    const hospitalId = Number(req.params.id);
+    if (Number.isNaN(hospitalId)) {
+      return res.status(400).json({ message: "Invalid hospital id" });
+    }
+
+    const hospital = await storage.getHospital(hospitalId);
     if (!hospital) return res.status(404).json({ message: "Hospital not found" });
     res.json(hospital);
   });
@@ -64,7 +69,12 @@ export async function registerRoutes(
   });
 
   app.get("/api/patients/:id", isAuthenticated, async (req, res) => {
-    const patient = await storage.getPatient(parseInt(req.params.id));
+    const patientId = Number(req.params.id);
+    if (Number.isNaN(patientId)) {
+      return res.status(400).json({ message: "Invalid patient id" });
+    }
+
+    const patient = await storage.getPatient(patientId);
     if (!patient) return res.status(404).json({ message: "Patient not found" });
     const records = await storage.getMedicalRecordsByPatient(patient.id);
     res.json({ ...patient, medicalRecords: records });
@@ -88,7 +98,11 @@ export async function registerRoutes(
     const { patientId } = req.query;
     let records;
     if (patientId) {
-      records = await storage.getMedicalRecordsByPatient(parseInt(patientId as string));
+      const parsed = Number(patientId);
+      if (Number.isNaN(parsed)) {
+        return res.status(400).json({ message: "Invalid patient id" });
+      }
+      records = await storage.getMedicalRecordsByPatient(parsed);
     } else {
       records = await storage.getMedicalRecords();
     }
@@ -96,7 +110,12 @@ export async function registerRoutes(
   });
 
   app.get("/api/medical-records/:id", isAuthenticated, async (req, res) => {
-    const record = await storage.getMedicalRecord(parseInt(req.params.id));
+    const recordId = Number(req.params.id);
+    if (Number.isNaN(recordId)) {
+      return res.status(400).json({ message: "Invalid record id" });
+    }
+
+    const record = await storage.getMedicalRecord(recordId);
     if (!record) return res.status(404).json({ message: "Record not found" });
     const vitals = await storage.getVitalSignsByRecord(record.id);
     await storage.createAuditLog({
@@ -171,7 +190,7 @@ export async function registerRoutes(
       const vitals = await storage.getVitalSignsByRecord(record.id);
       allVitals.push(...vitals);
     }
-    allVitals.sort((a, b) => 
+    allVitals.sort((a, b) =>
       new Date(b.recordedAt || 0).getTime() - new Date(a.recordedAt || 0).getTime()
     );
     res.json(allVitals);
@@ -262,6 +281,102 @@ export async function registerRoutes(
       pendingRequests: requests.filter((r) => r.status === "pending").length,
       unresolvedAlerts: alerts.filter((a) => !a.isResolved).length,
     });
+  });
+
+  // Appointments
+  app.get("/api/appointments", isAuthenticated, async (req, res) => {
+    const user = req.user as any;
+    const userId = user.id;
+    const userRole = user.role;
+
+    let appointments;
+    if (userRole === "patient") {
+      const patient = await storage.getPatientByUserId(userId);
+      if (!patient) return res.json([]);
+      appointments = await storage.getAppointmentsByPatient(patient.id);
+    } else if (userRole === "doctor") {
+      appointments = await storage.getAppointmentsByDoctor(userId);
+    } else {
+      // Admin/Nurse see all
+      appointments = await storage.getAppointments();
+    }
+    res.json(appointments);
+  });
+
+  app.get("/api/appointments/:id", isAuthenticated, async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+
+    const appointment = await storage.getAppointment(id);
+    if (!appointment) return res.status(404).json({ message: "Appointment not found" });
+
+    // Access control: only involved parties or admins
+    const user = req.user as any;
+    if (
+      user.role === "patient" &&
+      appointment.patient.userId !== user.id
+    ) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    if (
+      user.role === "doctor" &&
+      appointment.doctorId !== user.id
+    ) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    res.json(appointment);
+  });
+
+  app.post("/api/appointments", isAuthenticated, async (req, res) => {
+    const user = req.user as any;
+    let patientId = req.body.patientId;
+
+    // If patient, force their own ID
+    if (user.role === "patient") {
+      const patient = await storage.getPatientByUserId(user.id);
+      if (!patient) return res.status(400).json({ message: "Patient profile not found" });
+      patientId = patient.id;
+    }
+
+    const appointment = await storage.createAppointment({
+      ...req.body,
+      patientId,
+      hospitalId: 1, // Defaulting to 1 for now, similar to other routes
+    });
+
+    await storage.createAuditLog({
+      userId: user.id,
+      action: "create_appointment",
+      resourceType: "appointment",
+      resourceId: appointment.id,
+      patientId: appointment.patientId,
+      ipAddress: req.ip,
+    });
+
+    res.status(201).json(appointment);
+  });
+
+  app.patch("/api/appointments/:id/status", isAuthenticated, async (req, res) => {
+    const id = parseInt(req.params.id);
+    const { status } = req.body;
+    const user = req.user as any;
+
+    const appointment = await storage.updateAppointmentStatus(id, status);
+    if (!appointment) return res.status(404).json({ message: "Appointment not found" });
+
+    await storage.createAuditLog({
+      userId: user.id,
+      action: "update_appointment_status",
+      resourceType: "appointment",
+      resourceId: appointment.id,
+      patientId: appointment.patientId,
+      details: { oldStatus: appointment.status, newStatus: status },
+      ipAddress: req.ip,
+    });
+
+    res.json(appointment);
   });
 
   return httpServer;

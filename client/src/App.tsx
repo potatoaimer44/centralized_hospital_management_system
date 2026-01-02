@@ -27,6 +27,8 @@ import AuditLogsPage from "@/pages/audit-logs";
 import SecurityAlertsPage from "@/pages/security-alerts";
 import MyRecordsPage from "@/pages/my-records";
 import MyVitalsPage from "@/pages/my-vitals";
+import AppointmentsPage from "@/pages/appointments";
+import NewAppointmentPage from "@/pages/new-appointment";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const style = {
@@ -98,6 +100,8 @@ function Router() {
         <Route path="/my-records" component={MyRecordsPage} />
         <Route path="/my-records/:id" component={MedicalRecordDetailPage} />
         <Route path="/my-vitals" component={MyVitalsPage} />
+        <Route path="/appointments" component={AppointmentsPage} />
+        <Route path="/appointments/new" component={NewAppointmentPage} />
         <Route component={NotFound} />
       </Switch>
     </AuthenticatedLayout>
