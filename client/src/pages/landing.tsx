@@ -9,6 +9,7 @@ import {
   Activity, 
   Lock,
   Users,
+  UserPlus,
   ClipboardCheck
 } from "lucide-react";
 
@@ -59,7 +60,10 @@ export default function Landing() {
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <Button asChild data-testid="button-login" variant="outline">
-              <a href="#roles">Select Role</a>
+              <a href="/login">Login</a>
+            </Button>
+            <Button asChild data-testid="button-signup">
+              <a href="/signup">Sign Up</a>
             </Button>
           </div>
         </div>
@@ -81,30 +85,20 @@ export default function Landing() {
               doctors, nurses, and patients across Kathmandu Valley.
             </p>
             <div className="flex flex-col items-center gap-6 pt-4">
-              <p className="text-sm text-muted-foreground">Select your role to login:</p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Button size="lg" asChild className="bg-purple-600 hover:bg-purple-700" data-testid="button-login-admin">
-                  <a href="/api/login/admin">
-                    <Users className="mr-2 h-4 w-4" />
-                    Admin
+              <p className="text-sm text-muted-foreground">
+                Sign in to access your dashboard, or create a new account.
+              </p>
+              <div className="flex items-center gap-3">
+                <Button size="lg" asChild data-testid="button-login-main">
+                  <a href="/login">
+                    <Shield className="mr-2 h-4 w-4" />
+                    Login
                   </a>
                 </Button>
-                <Button size="lg" asChild className="bg-blue-600 hover:bg-blue-700" data-testid="button-login-doctor">
-                  <a href="/api/login/doctor">
-                    <Stethoscope className="mr-2 h-4 w-4" />
-                    Doctor
-                  </a>
-                </Button>
-                <Button size="lg" asChild className="bg-green-600 hover:bg-green-700" data-testid="button-login-nurse">
-                  <a href="/api/login/nurse">
-                    <Activity className="mr-2 h-4 w-4" />
-                    Nurse
-                  </a>
-                </Button>
-                <Button size="lg" asChild className="bg-gray-600 hover:bg-gray-700" data-testid="button-login-patient">
-                  <a href="/api/login/patient">
-                    <FileText className="mr-2 h-4 w-4" />
-                    Patient
+                <Button size="lg" variant="outline" asChild data-testid="button-signup-main">
+                  <a href="/signup">
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Sign Up
                   </a>
                 </Button>
               </div>

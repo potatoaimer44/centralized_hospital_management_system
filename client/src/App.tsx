@@ -11,11 +11,17 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import Landing from "@/pages/landing";
+import LoginPage from "@/pages/login";
+import SignUpPage from "@/pages/signup";
 import Home from "@/pages/home";
 import NotFound from "@/pages/not-found";
 import UsersPage from "@/pages/users";
+import NewUserPage from "@/pages/new-user";
+import EditUserPage from "@/pages/edit-user";
 import HospitalsPage from "@/pages/hospitals";
+import NewHospitalPage from "@/pages/new-hospital";
 import PatientsPage from "@/pages/patients";
+import NewPatientPage from "@/pages/new-patient";
 import PatientDetailPage from "@/pages/patient-detail";
 import MedicalRecordsPage from "@/pages/medical-records";
 import MedicalRecordDetailPage from "@/pages/medical-record-detail";
@@ -25,8 +31,11 @@ import NewVitalSignsPage from "@/pages/new-vital-signs";
 import AccessRequestsPage from "@/pages/access-requests";
 import AuditLogsPage from "@/pages/audit-logs";
 import SecurityAlertsPage from "@/pages/security-alerts";
+import RecordMatchesPage from "@/pages/record-matches";
 import MyRecordsPage from "@/pages/my-records";
 import MyVitalsPage from "@/pages/my-vitals";
+import AppointmentsPage from "@/pages/appointments";
+import NewAppointmentPage from "@/pages/new-appointment";
 
 function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const style = {
@@ -74,6 +83,8 @@ function Router() {
     return (
       <Switch>
         <Route path="/" component={Landing} />
+        <Route path="/login" component={LoginPage} />
+        <Route path="/signup" component={SignUpPage} />
         <Route component={Landing} />
       </Switch>
     );
@@ -84,20 +95,27 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/users" component={UsersPage} />
+        <Route path="/users/new" component={NewUserPage} />
+        <Route path="/users/:id/edit" component={EditUserPage} />
         <Route path="/hospitals" component={HospitalsPage} />
+        <Route path="/hospitals/new" component={NewHospitalPage} />
         <Route path="/patients" component={PatientsPage} />
+        <Route path="/patients/new" component={NewPatientPage} />
         <Route path="/patients/:id" component={PatientDetailPage} />
         <Route path="/medical-records" component={MedicalRecordsPage} />
         <Route path="/medical-records/new" component={NewMedicalRecordPage} />
         <Route path="/medical-records/:id" component={MedicalRecordDetailPage} />
         <Route path="/vital-signs" component={VitalSignsPage} />
         <Route path="/vital-signs/new" component={NewVitalSignsPage} />
+        <Route path="/record-matches" component={RecordMatchesPage} />
         <Route path="/access-requests" component={AccessRequestsPage} />
         <Route path="/audit-logs" component={AuditLogsPage} />
         <Route path="/security-alerts" component={SecurityAlertsPage} />
         <Route path="/my-records" component={MyRecordsPage} />
         <Route path="/my-records/:id" component={MedicalRecordDetailPage} />
         <Route path="/my-vitals" component={MyVitalsPage} />
+        <Route path="/appointments" component={AppointmentsPage} />
+        <Route path="/appointments/new" component={NewAppointmentPage} />
         <Route component={NotFound} />
       </Switch>
     </AuthenticatedLayout>

@@ -1,3 +1,4 @@
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { RoleBadge } from "@/components/role-badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,9 +55,11 @@ export default function UsersPage() {
           <h1 className="text-3xl font-semibold">User Management</h1>
           <p className="text-muted-foreground">Manage system users and their roles</p>
         </div>
-        <Button data-testid="button-add-user">
-          <UserPlus className="h-4 w-4 mr-2" />
-          Add User
+        <Button asChild data-testid="button-add-user">
+          <Link href="/users/new">
+            <UserPlus className="h-4 w-4 mr-2" />
+            Add User
+          </Link>
         </Button>
       </div>
 
@@ -154,8 +157,9 @@ export default function UsersPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit User</DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/users/${user.id}/edit`}>Edit Role</Link>
+                            </DropdownMenuItem>
                             <DropdownMenuItem className="text-destructive">
                               Deactivate
                             </DropdownMenuItem>

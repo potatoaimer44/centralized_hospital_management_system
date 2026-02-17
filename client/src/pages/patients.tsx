@@ -67,9 +67,11 @@ export default function PatientsPage() {
           <h1 className="text-3xl font-semibold">Patients</h1>
           <p className="text-muted-foreground">View and manage patient records</p>
         </div>
-        <Button data-testid="button-add-patient">
-          <UserPlus className="h-4 w-4 mr-2" />
-          Register Patient
+        <Button asChild data-testid="button-add-patient">
+          <Link href="/patients/new">
+            <UserPlus className="h-4 w-4 mr-2" />
+            Register Patient
+          </Link>
         </Button>
       </div>
 
@@ -101,9 +103,11 @@ export default function PatientsPage() {
           {searchQuery ? (
             <p className="text-sm mt-1">Try a different search term</p>
           ) : (
-            <Button variant="outline" className="mt-4">
-              <UserPlus className="h-4 w-4 mr-2" />
-              Register First Patient
+            <Button variant="outline" className="mt-4" asChild>
+              <Link href="/patients/new">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Register First Patient
+              </Link>
             </Button>
           )}
         </div>

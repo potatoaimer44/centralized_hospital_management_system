@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { StatCard } from "@/components/stat-card";
 import { SeverityIndicator } from "@/components/severity-indicator";
 import { RoleBadge } from "@/components/role-badge";
@@ -14,13 +15,41 @@ import {
   ClipboardList,
   Shield,
   ArrowRight,
-  Clock
+  Clock,
+  Brain,
+  Sparkles,
+  Loader2,
+  CheckCircle,
 } from "lucide-react";
 import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { format } from "date-fns";
 import type { User, Hospital, SecurityAlert, AccessRequest, AuditLog, AlertSeverity, UserRole } from "@shared/schema";
 
 export default function AdminDashboard() {
+  const { toast } = useToast();
+  const [aiSummary, setAiSummary] = useState<{
+    summary: string;
+    anomalies: { alertType: string; severity: string; description: string }[];
+    totalLogsAnalyzed: number;
+    alertsCreated: number;
+  } | null>(null);
+
+  const aiMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/ai/analyze-logs", { hours: 24 });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setAiSummary(data);
+      queryClient.invalidateQueries({ queryKey: ["/api/security-alerts"] });
+    },
+    onError: () => {
+      toast({ title: "AI analysis failed", variant: "destructive" });
+    },
+  });
+
   const { data: stats, isLoading: statsLoading } = useQuery<{
     totalHospitals: number;
     totalUsers: number;
@@ -109,6 +138,86 @@ export default function AdminDashboard() {
           </>
         )}
       </div>
+
+      {/* AI Security Analysis Card */}
+      <Card className="border-violet-200 dark:border-violet-900 overflow-visible">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Brain className="h-5 w-5 text-violet-600" />
+              AI Security Analysis
+            </CardTitle>
+            <CardDescription>
+              AI-powered anomaly detection across audit logs
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => aiMutation.mutate()}
+              disabled={aiMutation.isPending}
+              className="bg-violet-600 hover:bg-violet-700"
+            >
+              {aiMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+              ) : (
+                <Sparkles className="h-4 w-4 mr-1" />
+              )}
+              {aiMutation.isPending ? "Analyzing..." : "Scan Last 24h"}
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/security-alerts">
+                Full Analysis
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {aiMutation.isPending ? (
+            <div className="flex items-center gap-3 py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-violet-500" />
+              <p className="text-sm text-muted-foreground">
+                AI is scanning audit logs for suspicious patterns...
+              </p>
+            </div>
+          ) : aiSummary ? (
+            <div className="space-y-3">
+              <div className="p-3 bg-violet-50 dark:bg-violet-950/30 rounded-lg">
+                <p className="text-sm text-violet-900 dark:text-violet-100">
+                  {aiSummary.summary}
+                </p>
+                <div className="flex items-center gap-3 mt-2 text-xs text-violet-600 dark:text-violet-400">
+                  <span>{aiSummary.totalLogsAnalyzed} logs</span>
+                  <span>{aiSummary.anomalies.length} anomalies</span>
+                  {aiSummary.alertsCreated > 0 && (
+                    <Badge className="bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200 text-xs">
+                      {aiSummary.alertsCreated} new alerts
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              {aiSummary.anomalies.length === 0 && (
+                <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                  <CheckCircle className="h-4 w-4" />
+                  <span>No anomalies detected. System activity appears normal.</span>
+                </div>
+              )}
+              {aiSummary.anomalies.slice(0, 3).map((a, i) => (
+                <div key={i} className="flex items-start gap-2 text-sm p-2 rounded bg-muted/50">
+                  <SeverityIndicator severity={a.severity as AlertSeverity} />
+                  <p className="text-muted-foreground line-clamp-2">{a.description}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              <Brain className="h-8 w-8 mx-auto mb-2 opacity-40" />
+              <p className="text-sm">Click "Scan Last 24h" to run AI anomaly detection</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="overflow-visible">

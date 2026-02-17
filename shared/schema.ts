@@ -47,6 +47,7 @@ export type Hospital = typeof hospitals.$inferSelect;
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").unique(),
+  password: varchar("password", { length: 255 }),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
@@ -292,7 +293,85 @@ export const insertSecurityAlertSchema = createInsertSchema(securityAlerts).omit
 export type InsertSecurityAlert = z.infer<typeof insertSecurityAlertSchema>;
 export type SecurityAlert = typeof securityAlerts.$inferSelect;
 
+// Record Match Requests table (for deduplication when new patients register)
+export const recordMatchRequests = pgTable("record_match_requests", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  newPatientId: integer("new_patient_id").references(() => patients.id).notNull(),
+  existingPatientId: integer("existing_patient_id").references(() => patients.id).notNull(),
+  matchConfidence: varchar("match_confidence", { length: 10 }).notNull(), // high, medium, low
+  matchedFields: jsonb("matched_fields").notNull(), // per-field similarity scores
+  aiScore: decimal("ai_score", { precision: 5, scale: 4 }), // 0.0000 – 1.0000 overall AI confidence
+  aiReasoning: text("ai_reasoning"), // LLM-generated explanation of why records match
+  status: varchar("status", { length: 20 }).default("pending"), // pending, approved, denied
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+});
+
+export const recordMatchRequestsRelations = relations(recordMatchRequests, ({ one }) => ({
+  newPatient: one(patients, {
+    fields: [recordMatchRequests.newPatientId],
+    references: [patients.id],
+  }),
+  existingPatient: one(patients, {
+    fields: [recordMatchRequests.existingPatientId],
+    references: [patients.id],
+  }),
+  reviewer: one(users, {
+    fields: [recordMatchRequests.reviewedBy],
+    references: [users.id],
+  }),
+}));
+
+export const insertRecordMatchRequestSchema = createInsertSchema(recordMatchRequests).omit({
+  id: true,
+  status: true,
+  reviewedBy: true,
+  createdAt: true,
+  reviewedAt: true,
+});
+export type InsertRecordMatchRequest = z.infer<typeof insertRecordMatchRequestSchema>;
+export type RecordMatchRequest = typeof recordMatchRequests.$inferSelect;
+
 // Role type for type safety
 export type UserRole = "admin" | "doctor" | "nurse" | "patient";
 export type AlertSeverity = "low" | "medium" | "high" | "critical";
 export type RequestStatus = "pending" | "approved" | "denied";
+
+// Appointments table
+export const appointments = pgTable("appointments", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  patientId: integer("patient_id").references(() => patients.id).notNull(),
+  doctorId: varchar("doctor_id").references(() => users.id).notNull(),
+  hospitalId: integer("hospital_id").references(() => hospitals.id).notNull(),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
+  status: varchar("status", { length: 20 }).default("scheduled"), // scheduled, completed, cancelled, no_show
+  reason: text("reason"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const appointmentsRelations = relations(appointments, ({ one }) => ({
+  patient: one(patients, {
+    fields: [appointments.patientId],
+    references: [patients.id],
+  }),
+  doctor: one(users, {
+    fields: [appointments.doctorId],
+    references: [users.id],
+  }),
+  hospital: one(hospitals, {
+    fields: [appointments.hospitalId],
+    references: [hospitals.id],
+  }),
+}));
+
+export const insertAppointmentSchema = createInsertSchema(appointments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
+export type Appointment = typeof appointments.$inferSelect;

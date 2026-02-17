@@ -1,3 +1,4 @@
+import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,9 +38,11 @@ export default function HospitalsPage() {
           <h1 className="text-3xl font-semibold">Hospitals</h1>
           <p className="text-muted-foreground">Manage healthcare facilities in Kathmandu Valley</p>
         </div>
-        <Button data-testid="button-add-hospital">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Hospital
+        <Button asChild data-testid="button-add-hospital">
+          <Link href="/hospitals/new">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Hospital
+          </Link>
         </Button>
       </div>
 
@@ -71,9 +74,11 @@ export default function HospitalsPage() {
           {searchQuery ? (
             <p className="text-sm mt-1">Try a different search term</p>
           ) : (
-            <Button variant="outline" className="mt-4">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Your First Hospital
+            <Button variant="outline" className="mt-4" asChild>
+              <Link href="/hospitals/new">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Your First Hospital
+              </Link>
             </Button>
           )}
         </div>
