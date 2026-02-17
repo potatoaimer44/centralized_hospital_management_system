@@ -30,15 +30,21 @@ import {
   type InsertSecurityAlert,
   type Appointment,
   type InsertAppointment,
+<<<<<<< HEAD
   type RecordMatchRequest,
   type InsertRecordMatchRequest,
+=======
+>>>>>>> 12d8793313f04c5f0fda3ece8d8cb4c9aadd8541
 } from "@shared/schema";
 
 export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+<<<<<<< HEAD
   createUser(user: Omit<InsertUser, "id"> & { id?: string }): Promise<User>;
+=======
+>>>>>>> 12d8793313f04c5f0fda3ece8d8cb4c9aadd8541
   getUserByEmail(email: string): Promise<User | undefined>;
   getUsers(): Promise<User[]>;
   updateUserRole(id: string, role: string): Promise<User | undefined>;
@@ -95,6 +101,7 @@ export interface IStorage {
   getAppointmentsByDoctor(doctorId: string): Promise<(Appointment & { patient: Patient; hospital: Hospital })[]>;
   createAppointment(appointment: InsertAppointment): Promise<Appointment>;
   updateAppointmentStatus(id: number, status: string): Promise<Appointment | undefined>;
+<<<<<<< HEAD
 
   // Record Match Requests
   findMatchingPatients(firstName: string, lastName: string, dateOfBirth: string, bloodGroup?: string | null): Promise<Patient[]>;
@@ -104,6 +111,8 @@ export interface IStorage {
   createRecordMatchRequest(request: InsertRecordMatchRequest): Promise<RecordMatchRequest>;
   updateRecordMatchRequestStatus(id: number, status: string, reviewedBy: string): Promise<RecordMatchRequest | undefined>;
   mergePatientRecords(existingPatientId: number, newPatientId: number): Promise<void>;
+=======
+>>>>>>> 12d8793313f04c5f0fda3ece8d8cb4c9aadd8541
 }
 
 export class DatabaseStorage implements IStorage {
@@ -133,6 +142,7 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
+<<<<<<< HEAD
     return user;
   }
 
@@ -153,6 +163,8 @@ export class DatabaseStorage implements IStorage {
         isActive: userData.isActive ?? true,
       })
       .returning();
+=======
+>>>>>>> 12d8793313f04c5f0fda3ece8d8cb4c9aadd8541
     return user;
   }
 
@@ -506,6 +518,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updated;
   }
+<<<<<<< HEAD
 
   // Record Match Requests
 
@@ -607,6 +620,8 @@ export class DatabaseStorage implements IStorage {
       .set({ updatedAt: new Date() })
       .where(eq(patients.id, existingPatientId));
   }
+=======
+>>>>>>> 12d8793313f04c5f0fda3ece8d8cb4c9aadd8541
 }
 
 export const storage = new DatabaseStorage();

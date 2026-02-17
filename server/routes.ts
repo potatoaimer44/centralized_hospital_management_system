@@ -209,6 +209,7 @@ export async function registerRoutes(
       return res.status(400).json({ message: "Invalid patient id" });
     }
 
+<<<<<<< HEAD
     const user = req.user as any;
     const userId = user?.claims?.sub ?? user?.id;
 
@@ -222,6 +223,8 @@ export async function registerRoutes(
       }
     }
 
+=======
+>>>>>>> 12d8793313f04c5f0fda3ece8d8cb4c9aadd8541
     const patient = await storage.getPatient(patientId);
     if (!patient) return res.status(404).json({ message: "Patient not found" });
     const records = await storage.getMedicalRecordsByPatient(patient.id);
@@ -301,6 +304,7 @@ export async function registerRoutes(
     const user = req.user as any;
     const userId = getReqUserId(req);
     const { patientId } = req.query;
+<<<<<<< HEAD
 
     // Doctors can only see records of patients they have approved access to
     // and are explicitly blocked from viewing records of patients who denied access
@@ -330,6 +334,17 @@ export async function registerRoutes(
         (r: any) => approvedIds.includes(r.patientId) && !deniedIds.includes(r.patientId)
       );
       return res.json(filtered);
+=======
+    let records;
+    if (patientId) {
+      const parsed = Number(patientId);
+      if (Number.isNaN(parsed)) {
+        return res.status(400).json({ message: "Invalid patient id" });
+      }
+      records = await storage.getMedicalRecordsByPatient(parsed);
+    } else {
+      records = await storage.getMedicalRecords();
+>>>>>>> 12d8793313f04c5f0fda3ece8d8cb4c9aadd8541
     }
 
     // Admin / Nurse — see all
@@ -346,8 +361,11 @@ export async function registerRoutes(
   });
 
   app.get("/api/medical-records/:id", isAuthenticated, async (req, res) => {
+<<<<<<< HEAD
     const user = req.user as any;
     const userId = getReqUserId(req);
+=======
+>>>>>>> 12d8793313f04c5f0fda3ece8d8cb4c9aadd8541
     const recordId = Number(req.params.id);
     if (Number.isNaN(recordId)) {
       return res.status(400).json({ message: "Invalid record id" });
@@ -701,6 +719,7 @@ export async function registerRoutes(
     });
   });
 
+<<<<<<< HEAD
   // ── Admin Dashboard Stats ──
   app.get("/api/admin/stats", isAuthenticated, isAdmin, async (req, res) => {
     const [hospitalList, userList, patientList, requestList] = await Promise.all([
@@ -749,6 +768,8 @@ export async function registerRoutes(
     });
   });
 
+=======
+>>>>>>> 12d8793313f04c5f0fda3ece8d8cb4c9aadd8541
   // Appointments
   app.get("/api/appointments", isAuthenticated, async (req, res) => {
     const user = req.user as any;
@@ -799,6 +820,7 @@ export async function registerRoutes(
     const user = req.user as any;
     let patientId = req.body.patientId;
 
+<<<<<<< HEAD
     // If patient, force their own ID — auto-create profile if missing
     if (user.role === "patient") {
       let patient = await storage.getPatientByUserId(user.id);
@@ -825,6 +847,23 @@ export async function registerRoutes(
 
     logAudit({
       userId: getReqUserId(req),
+=======
+    // If patient, force their own ID
+    if (user.role === "patient") {
+      const patient = await storage.getPatientByUserId(user.id);
+      if (!patient) return res.status(400).json({ message: "Patient profile not found" });
+      patientId = patient.id;
+    }
+
+    const appointment = await storage.createAppointment({
+      ...req.body,
+      patientId,
+      hospitalId: 1, // Defaulting to 1 for now, similar to other routes
+    });
+
+    await storage.createAuditLog({
+      userId: user.id,
+>>>>>>> 12d8793313f04c5f0fda3ece8d8cb4c9aadd8541
       action: "create_appointment",
       resourceType: "appointment",
       resourceId: appointment.id,
@@ -838,12 +877,21 @@ export async function registerRoutes(
   app.patch("/api/appointments/:id/status", isAuthenticated, async (req, res) => {
     const id = parseInt(req.params.id);
     const { status } = req.body;
+<<<<<<< HEAD
+=======
+    const user = req.user as any;
+>>>>>>> 12d8793313f04c5f0fda3ece8d8cb4c9aadd8541
 
     const appointment = await storage.updateAppointmentStatus(id, status);
     if (!appointment) return res.status(404).json({ message: "Appointment not found" });
 
+<<<<<<< HEAD
     logAudit({
       userId: getReqUserId(req),
+=======
+    await storage.createAuditLog({
+      userId: user.id,
+>>>>>>> 12d8793313f04c5f0fda3ece8d8cb4c9aadd8541
       action: "update_appointment_status",
       resourceType: "appointment",
       resourceId: appointment.id,
@@ -855,6 +903,7 @@ export async function registerRoutes(
     res.json(appointment);
   });
 
+<<<<<<< HEAD
   // ── Record Match Requests (admin only) ──
 
   app.get("/api/record-matches", isAuthenticated, isAdmin, async (req, res) => {
@@ -933,5 +982,7 @@ export async function registerRoutes(
     res.json(updated);
   });
 
+=======
+>>>>>>> 12d8793313f04c5f0fda3ece8d8cb4c9aadd8541
   return httpServer;
 }
